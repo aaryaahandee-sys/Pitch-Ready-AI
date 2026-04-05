@@ -28,7 +28,11 @@ import {
   Mic,
   Volume2,
   VolumeX,
-  RefreshCw
+  RefreshCw,
+  DollarSign,
+  ShieldAlert,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { clsx, type ClassValue } from 'clsx';
@@ -449,93 +453,149 @@ const AppHeader = ({ userName, setScreen, activeTab, setActiveTab, report }: App
 );
 
 const InsightsTab = ({ report, userName }: InsightsTabProps) => {
+  const [selectedScore, setSelectedScore] = useState<string | null>(null);
+  
   if (!report) return null;
+  
+  const avgScore = Math.round(Object.values(report.scores).reduce((a: any, b: any) => a + b, 0) as number / 6);
   
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
       {/* Score Header */}
-      <div className="card bg-gradient-to-br from-white to-light-blue border-none shadow-md text-center py-12">
-        <div className="w-32 h-32 rounded-full border-8 border-primary flex items-center justify-center text-4xl font-bold text-primary mx-auto mb-6">
-          {Math.round(Object.values(report.scores).reduce((a: any, b: any) => a + b, 0) as number / 6)}%
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="card bg-gradient-to-br from-white to-light-blue border-none shadow-md text-center py-12"
+      >
+        <div className="relative inline-block">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 rounded-full border-2 border-dashed border-primary/20"
+          />
+          <div className="w-32 h-32 rounded-full border-8 border-primary flex items-center justify-center text-4xl font-bold text-primary mx-auto mb-6 bg-white shadow-inner">
+            {avgScore}%
+          </div>
         </div>
         <h2 className="text-3xl font-bold mb-2">{userName}'s Startup Analysis</h2>
         <div className={cn(
-          "inline-block px-6 py-2 rounded-full font-bold text-lg mb-4",
+          "inline-block px-6 py-2 rounded-full font-bold text-lg mb-4 shadow-sm",
           report.decision === 'Interested' ? "bg-green-100 text-green-700" : 
           report.decision === 'Maybe' ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
         )}>
           {report.decision}
         </div>
         <p className="text-lg italic text-text-muted max-w-2xl mx-auto">"{report.investmentStory.oneLineSummary}"</p>
-      </div>
+      </motion.div>
 
       {/* Core Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card border-l-4 border-green-500">
-          <h3 className="font-bold flex items-center gap-2 mb-4"><CheckCircle2 className="text-green-500" size={18} /> Strengths</h3>
-          <ul className="text-sm space-y-2">
-            {report.strengths.map((s, i) => <li key={i}>• {s}</li>)}
-          </ul>
-        </div>
-        <div className="card border-l-4 border-red-500">
-          <h3 className="font-bold flex items-center gap-2 mb-4"><AlertCircle className="text-red-500" size={18} /> Weaknesses</h3>
-          <ul className="text-sm space-y-2">
-            {report.weaknesses.map((s, i) => <li key={i}>• {s}</li>)}
-          </ul>
-        </div>
-        <div className="card border-l-4 border-amber-500">
-          <h3 className="font-bold flex items-center gap-2 mb-4"><HelpCircle className="text-amber-500" size={18} /> Missing Info</h3>
-          <ul className="text-sm space-y-2">
-            {report.missing.map((s, i) => <li key={i}>• {s}</li>)}
-          </ul>
-        </div>
-        <div className="card border-l-4 border-primary">
-          <h3 className="font-bold flex items-center gap-2 mb-4"><Rocket className="text-primary" size={18} /> Improvements</h3>
-          <ul className="text-sm space-y-2">
-            {report.improvements.map((s, i) => <li key={i}>• {s}</li>)}
-          </ul>
-        </div>
+        {[
+          { title: "Strengths", items: report.strengths, icon: CheckCircle2, color: "green" },
+          { title: "Weaknesses", items: report.weaknesses, icon: AlertCircle, color: "red" },
+          { title: "Missing Info", items: report.missing, icon: HelpCircle, color: "amber" },
+          { title: "Improvements", items: report.improvements, icon: Rocket, color: "blue" }
+        ].map((section, idx) => (
+          <motion.div 
+            key={section.title}
+            whileHover={{ y: -5 }}
+            className={cn("card border-l-4 cursor-default transition-all", `border-${section.color}-500`)}
+          >
+            <h3 className="font-bold flex items-center gap-2 mb-4">
+              <section.icon className={`text-${section.color}-500`} size={18} /> 
+              {section.title}
+            </h3>
+            <ul className="text-sm space-y-2">
+              {section.items.map((s, i) => (
+                <motion.li 
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 + idx * 0.2 }}
+                  className="flex gap-2"
+                >
+                  <span className="text-text-muted">•</span>
+                  <span>{s}</span>
+                </motion.li>
+              ))}
+            </ul>
+          </motion.div>
+        ))}
       </div>
 
       {/* Scores Detail */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="card">
-          <h3 className="font-bold text-xl mb-6">Analyst Scorecard</h3>
-          <div className="space-y-4">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-bold text-xl">Analyst Scorecard</h3>
+            <span className="text-xs text-text-muted">Click bars for details</span>
+          </div>
+          <div className="space-y-6">
             {Object.entries(report.scores).map(([key, val]) => {
               const score = val as number;
+              const isSelected = selectedScore === key;
               return (
-                <div key={key}>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                <div 
+                  key={key} 
+                  className="group cursor-pointer"
+                  onClick={() => setSelectedScore(isSelected ? null : key)}
+                >
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="capitalize font-medium group-hover:text-primary transition-colors">
+                      {key.replace(/([A-Z])/g, ' $1')}
+                    </span>
                     <span className="font-bold">{score}%</span>
                   </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${score}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
                       className={cn(
-                        "h-full rounded-full transition-all duration-1000",
+                        "h-full rounded-full transition-all",
                         score >= 80 ? "bg-green-500" : score >= 50 ? "bg-amber-500" : "bg-red-500"
                       )}
-                      style={{ width: `${score}%` }}
                     />
                   </div>
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <p className="text-xs text-text-muted mt-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                          {report.stageInsights || "This score reflects our analysis of your current stage and market position. Focus on improving this metric to increase investor confidence."}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               );
             })}
           </div>
         </div>
         
-        <div className="card">
+        <div className="card flex flex-col">
           <h3 className="font-bold text-xl mb-6">Investment Thesis</h3>
-          <p className="text-text-muted mb-6 leading-relaxed">{report.reason}</p>
-          <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-            <h4 className="font-bold text-primary mb-2">What would change my mind?</h4>
-            <ul className="text-sm space-y-2">
+          <div className="flex-1">
+            <p className="text-text-muted mb-6 leading-relaxed text-lg">{report.reason}</p>
+          </div>
+          <div className="p-5 bg-primary/5 rounded-2xl border border-primary/10 shadow-sm">
+            <h4 className="font-bold text-primary mb-3 flex items-center gap-2">
+              <Zap size={16} /> What would change my mind?
+            </h4>
+            <ul className="text-sm space-y-3">
               {report.decisionAccountability.changeTriggers.map((t, i) => (
-                <li key={i} className="flex gap-2">
-                  <ArrowRight size={14} className="mt-1 flex-shrink-0" />
-                  <span>{t}</span>
-                </li>
+                <motion.li 
+                  key={i} 
+                  whileHover={{ x: 5 }}
+                  className="flex gap-3 p-2 hover:bg-white rounded-lg transition-all cursor-default"
+                >
+                  <ArrowRight size={14} className="mt-1 text-primary flex-shrink-0" />
+                  <span className="text-text-dark">{t}</span>
+                </motion.li>
               ))}
             </ul>
           </div>
@@ -547,21 +607,28 @@ const InsightsTab = ({ report, userName }: InsightsTabProps) => {
         <h3 className="font-bold text-xl mb-6">Founder Action Roadmap</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {report.founderActionRoadmap.map((item, i) => (
-            <div key={i} className="flex gap-4 p-4 rounded-xl border border-gray-100 hover:border-primary/20 transition-colors">
-              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold flex-shrink-0">
+            <motion.div 
+              key={i} 
+              whileHover={{ scale: 1.02 }}
+              className="flex gap-4 p-5 rounded-2xl border border-gray-100 hover:border-primary/30 hover:shadow-md transition-all bg-white group cursor-pointer"
+            >
+              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold flex-shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
                 {i + 1}
               </div>
-              <div>
-                <div className="font-bold mb-1">{item.action}</div>
-                <span className={cn(
-                  "text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded",
-                  item.priority === 'High' ? "bg-red-100 text-red-700" : 
-                  item.priority === 'Med' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-                )}>
-                  {item.priority} Priority
-                </span>
+              <div className="flex-1">
+                <div className="font-bold mb-2 group-hover:text-primary transition-colors">{item.action}</div>
+                <div className="flex items-center justify-between">
+                  <span className={cn(
+                    "text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded shadow-sm",
+                    item.priority === 'High' ? "bg-red-100 text-red-700" : 
+                    item.priority === 'Med' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                  )}>
+                    {item.priority} Priority
+                  </span>
+                  <ArrowRight size={14} className="text-gray-300 group-hover:text-primary transition-colors" />
+                </div>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -626,42 +693,124 @@ const InterviewTab = ({
 );
 
 const SignalsTab = ({ report }: SignalsTabProps) => {
+  const [selectedTrend, setSelectedTrend] = useState<number | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   if (!report) return null;
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => setIsRefreshing(false), 1500);
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
-      <div className="card border-t-4 border-blue-500">
+      <div className="card border-t-4 border-blue-500 relative overflow-hidden">
+        {isRefreshing && (
+          <motion.div 
+            initial={{ x: "-100%" }}
+            animate={{ x: "100%" }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent"
+          />
+        )}
+        
         <div className="flex justify-between items-start mb-8">
           <div>
             <h2 className="text-2xl font-bold mb-1">External Market Signals</h2>
             <p className="text-text-muted">Real-time simulation of market momentum and investor sentiment.</p>
           </div>
-          <div className="text-right">
-            <div className="text-xs font-bold text-text-muted uppercase mb-1">Market Momentum</div>
-            <div className={cn(
-              "px-4 py-1 rounded-full font-bold",
-              report.externalSignals.momentum === 'Rising' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-            )}>
-              {report.externalSignals.momentum}
+          <div className="flex flex-col items-end gap-3">
+            <button 
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="btn btn-outline btn-sm"
+            >
+              <RefreshCw size={14} className={cn("mr-2", isRefreshing && "animate-spin")} />
+              Refresh Signals
+            </button>
+            <div className="text-right">
+              <div className="text-xs font-bold text-text-muted uppercase mb-1">Market Momentum</div>
+              <div className={cn(
+                "px-4 py-1 rounded-full font-bold shadow-sm",
+                report.externalSignals.momentum === 'Rising' ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+              )}>
+                {report.externalSignals.momentum}
+              </div>
             </div>
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="p-6 bg-gray-50 rounded-2xl">
-            <h3 className="font-bold flex items-center gap-2 mb-4"><TrendingUp size={18} /> Growth Trends</h3>
+          <div className="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-bold flex items-center gap-2"><TrendingUp size={18} className="text-blue-500" /> Growth Trends</h3>
+              <span className="text-[10px] text-text-muted uppercase font-bold">Click for advice</span>
+            </div>
             <ul className="space-y-3">
               {report.externalSignals.trends.map((t, i) => (
-                <li key={i} className="flex gap-3 text-sm">
-                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5"></div>
-                  {t}
-                </li>
+                <motion.li 
+                  key={i} 
+                  whileHover={{ x: 5 }}
+                  onClick={() => setSelectedTrend(selectedTrend === i ? null : i)}
+                  className={cn(
+                    "flex flex-col gap-2 p-3 rounded-xl transition-all cursor-pointer border",
+                    selectedTrend === i ? "bg-white border-blue-200 shadow-sm" : "hover:bg-white border-transparent"
+                  )}
+                >
+                  <div className="flex gap-3 text-sm font-medium">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                    {t}
+                  </div>
+                  <AnimatePresence>
+                    {selectedTrend === i && (
+                      <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="text-xs text-blue-600 bg-blue-50 p-3 rounded-lg mt-2 border border-blue-100">
+                          <span className="font-bold uppercase block mb-1">Strategic Advice:</span>
+                          Leverage this trend in your pitch deck's "Why Now" slide. Investors are actively looking for startups that capitalize on this specific market shift.
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.li>
               ))}
             </ul>
           </div>
-          <div className="p-6 bg-gray-50 rounded-2xl">
-            <h3 className="font-bold flex items-center gap-2 mb-4"><Zap size={18} /> Investor Interest</h3>
-            <div className="text-4xl font-bold text-primary mb-2">{report.externalSignals.interest}</div>
-            <p className="text-sm text-text-muted">Investors are currently {report.externalSignals.interest.toLowerCase()} on this category due to current market dynamics.</p>
+          
+          <div className="flex flex-col gap-6">
+            <div className="p-8 bg-gradient-to-br from-primary/5 to-primary/10 rounded-2xl border border-primary/10 flex flex-col items-center justify-center text-center">
+              <h3 className="font-bold flex items-center gap-2 mb-4 text-primary"><Zap size={18} /> Investor Interest</h3>
+              <motion.div 
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-5xl font-bold text-primary mb-4"
+              >
+                {report.externalSignals.interest}
+              </motion.div>
+              <p className="text-sm text-text-muted leading-relaxed">
+                Investors are currently <span className="font-bold text-text-dark">{report.externalSignals.interest.toLowerCase()}</span> on this category due to current market dynamics and recent exit activity.
+              </p>
+            </div>
+
+            <div className="p-6 bg-white rounded-2xl border border-gray-100 shadow-sm">
+              <h3 className="font-bold text-sm mb-4 uppercase tracking-wider text-text-muted">Market Saturation</h3>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden flex">
+                  <div className={cn(
+                    "h-full transition-all duration-1000",
+                    report.marketPositioning.saturation === 'Low' ? "w-1/3 bg-green-500" : 
+                    report.marketPositioning.saturation === 'Med' ? "w-2/3 bg-amber-500" : "w-full bg-red-500"
+                  )} />
+                </div>
+                <span className="font-bold text-sm">{report.marketPositioning.saturation}</span>
+              </div>
+              <p className="text-xs text-text-muted mt-3">{report.marketPositioning.explanation}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -671,6 +820,14 @@ const SignalsTab = ({ report }: SignalsTabProps) => {
 
 const ScenariosTab = ({ report, runScenario, isSimulatingScenario, scenarioResult }: ScenariosTabProps) => {
   if (!report) return null;
+  
+  const scenarios = [
+    { id: 'traction', label: '3x Traction Growth', icon: TrendingUp, color: "blue" },
+    { id: 'pricing', label: 'Pricing Model Shift', icon: DollarSign, color: "green" },
+    { id: 'market', label: 'Market Size Expansion', icon: Globe, color: "amber" },
+    { id: 'competitor', label: 'New Big Competitor', icon: ShieldAlert, color: "red" }
+  ];
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
       <div className="card border-t-4 border-amber-500">
@@ -680,58 +837,123 @@ const ScenariosTab = ({ report, runScenario, isSimulatingScenario, scenarioResul
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="space-y-3">
             <div className="text-xs font-bold text-text-muted uppercase mb-2">Select Scenario</div>
-            {[
-              { id: 'traction', label: '3x Traction Growth' },
-              { id: 'pricing', label: 'Pricing Model Shift' },
-              { id: 'market', label: 'Market Size Expansion' },
-              { id: 'competitor', label: 'New Big Competitor' }
-            ].map(s => (
-              <button 
+            {scenarios.map(s => (
+              <motion.button 
                 key={s.id}
+                whileHover={{ x: 5 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => runScenario(s.id)}
-                className="btn btn-outline w-full justify-start py-3"
+                className="btn btn-outline w-full justify-start py-4 group hover:border-primary/50 transition-all"
               >
-                {s.label}
-              </button>
+                <s.icon size={18} className="mr-3 text-text-muted group-hover:text-primary transition-colors" />
+                <span className="group-hover:text-primary transition-colors">{s.label}</span>
+              </motion.button>
             ))}
           </div>
           
-          <div className="md:col-span-2 min-h-[300px] bg-gray-50 rounded-2xl p-8 flex flex-col items-center justify-center text-center">
-            {isSimulatingScenario ? (
-              <div className="space-y-4">
-                <Loader2 className="animate-spin text-primary mx-auto" size={48} />
-                <p className="font-medium">Simulating impact...</p>
-              </div>
-            ) : scenarioResult ? (
-              <div className="w-full text-left">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-bold">Simulation Result</h3>
-                  <div className={cn(
-                    "px-4 py-1 rounded-full font-bold",
-                    scenarioResult.newDecision === 'Interested' ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
-                  )}>
-                    {scenarioResult.newDecision} ({scenarioResult.newScore}%)
+          <div className="md:col-span-2 min-h-[400px] bg-gray-50 rounded-3xl p-8 flex flex-col items-center justify-center text-center border border-gray-100 shadow-inner relative overflow-hidden">
+            <AnimatePresence mode="wait">
+              {isSimulatingScenario ? (
+                <motion.div 
+                  key="loading"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="space-y-6"
+                >
+                  <div className="relative">
+                    <motion.div 
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      className="w-20 h-20 rounded-full border-4 border-primary/20 border-t-primary mx-auto"
+                    />
+                    <Zap className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-primary animate-pulse" size={24} />
                   </div>
-                </div>
-                <p className="mb-6 leading-relaxed">{scenarioResult.impact}</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h4 className="text-xs font-bold text-green-600 uppercase mb-2">New Opportunities</h4>
-                    <ul className="text-sm space-y-1">
-                      {scenarioResult.newOpportunities.map((o: string, i: number) => <li key={i}>• {o}</li>)}
-                    </ul>
+                  <div className="space-y-2">
+                    <p className="font-bold text-xl">Analyzing Impact...</p>
+                    <p className="text-sm text-text-muted">Recalculating investment thesis and market positioning.</p>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-bold text-red-600 uppercase mb-2">New Risks</h4>
-                    <ul className="text-sm space-y-1">
-                      {scenarioResult.newRisks.map((r: string, i: number) => <li key={i}>• {r}</li>)}
-                    </ul>
+                </motion.div>
+              ) : scenarioResult ? (
+                <motion.div 
+                  key="result"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="w-full text-left"
+                >
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                    <div>
+                      <h3 className="text-2xl font-bold">Simulation Result</h3>
+                      <p className="text-sm text-text-muted">Based on the selected strategic shift.</p>
+                    </div>
+                    <div className={cn(
+                      "px-6 py-2 rounded-full font-bold text-lg shadow-sm border",
+                      scenarioResult.newDecision === 'Interested' ? "bg-green-50 border-green-200 text-green-700" : "bg-amber-50 border-amber-200 text-amber-700"
+                    )}>
+                      {scenarioResult.newDecision} ({scenarioResult.newScore}%)
+                    </div>
                   </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-text-muted">Select a scenario to simulate the impact on your investment readiness.</p>
-            )}
+                  
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mb-8">
+                    <p className="leading-relaxed text-lg text-text-dark italic">"{scenarioResult.impact}"</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-green-600 uppercase tracking-widest flex items-center gap-2">
+                        <ArrowUpRight size={14} /> New Opportunities
+                      </h4>
+                      <ul className="space-y-3">
+                        {scenarioResult.newOpportunities.map((o: string, i: number) => (
+                          <motion.li 
+                            key={i}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            className="flex gap-3 text-sm p-3 bg-green-50/50 rounded-xl border border-green-100/50"
+                          >
+                            <CheckCircle2 size={16} className="text-green-500 flex-shrink-0 mt-0.5" />
+                            {o}
+                          </motion.li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-red-600 uppercase tracking-widest flex items-center gap-2">
+                        <ArrowDownRight size={14} /> New Risks
+                      </h4>
+                      <ul className="space-y-3">
+                        {scenarioResult.newRisks.map((r: string, i: number) => (
+                          <motion.li 
+                            key={i}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.1 }}
+                            className="flex gap-3 text-sm p-3 bg-red-50/50 rounded-xl border border-red-100/50"
+                          >
+                            <AlertCircle size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+                            {r}
+                          </motion.li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div 
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="space-y-4"
+                >
+                  <div className="w-20 h-20 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mx-auto mb-4">
+                    <Target size={40} />
+                  </div>
+                  <p className="text-lg font-medium text-text-dark">Ready to simulate?</p>
+                  <p className="text-text-muted max-w-xs mx-auto">Select a scenario on the left to see how it shifts your investment potential.</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -1516,8 +1738,64 @@ export default function App() {
   };
 
   const runDemo = (type: 'weak' | 'strong') => {
-    if (!apiKey) return setShowApiKeyModal(true);
-    
+    const mockReport: EvaluationReport = type === 'strong' ? {
+      scores: { problemClarity: 95, marketOpportunity: 90, tractionStrength: 85, businessModel: 88, differentiation: 92, founderCredibility: 90 },
+      decision: "Interested",
+      confidence: "92%",
+      reason: "This is a textbook example of a high-potential venture. The team has identified a massive pain point in a growing market and has already demonstrated significant traction with top-tier clients. The unit economics are robust, and the proprietary technology provides a defensible moat.",
+      strengths: ["Strong ARR growth (15% MoM)", "Proprietary sensor fusion algorithms", "Experienced founding team", "Clear path to $100M ARR"],
+      weaknesses: ["High implementation cost for small clients", "Long sales cycles in aerospace"],
+      missing: ["Detailed breakdown of churn by cohort", "Full cap table details"],
+      improvements: ["Shorten sales cycle with a self-serve tier", "Expand into industrial energy sector"],
+      redFlags: [], objections: [], mistakes: [], stageInsights: "Your traction is exceptional for an early-stage startup. Most VCs will be impressed by the OEM pilots.", followups: [], dealBreakers: [],
+      marketPositioning: { saturation: "Low", strength: "Strong", explanation: "The market is currently fragmented with legacy players, leaving a wide opening for a modern AI-driven solution." },
+      bestFitInvestors: [ { type: "Deep Tech VC", reason: "They value proprietary IP and long-term industrial impact." } ],
+      insightSummary: { impressed: ["Traction", "IP"], concerns: ["Sales cycle"], fixNow: ["Self-serve pilot"] },
+      multiVCSimulation: [ { type: "Early-stage VC", decision: "Interested", concern: "Can they scale the sales team?", liked: "The tech moat is real." } ],
+      signalAnalysis: { positive: [ { signal: "Industry 4.0 tailwinds", explanation: "Manufacturing is digitizing rapidly." } ], weak: [] },
+      benchmarking: [ { area: "Traction", level: "Above" }, { area: "Market", level: "Above" } ],
+      actionPlan: { nextSteps: ["Prepare Series A deck", "Hire VP of Sales"], recommendations: "Focus on closing the remaining OEM pilots to solidify the lead." },
+      perspectiveGap: { problem: { founder: "Critical", investor: "Critical", gap: "Low" }, market: { founder: "Massive", investor: "Large", gap: "Med" }, traction: { founder: "Strong", investor: "Impressive", gap: "Low" }, differentiation: { founder: "Unique", investor: "Defensible", gap: "Low" } },
+      signalInterpretation: [ { signal: "OEM Pilots", interpretation: "High validation from industry leaders.", type: "success" } ],
+      decisionAccountability: { why: "Strong fundamentals and clear execution.", assumptions: ["Market continues to digitize"], risks: ["Macro slowdown"], changeTriggers: ["Loss of a major OEM pilot", "Competitor raises $100M"] },
+      founderReadiness: { clarity: 95, thinking: 92, execution: 88, feedback: "Excellent strategic thinking." },
+      externalSignals: { momentum: "Rising", interest: "High", trends: ["Industry 4.0 Adoption", "Predictive Maintenance Growth", "AI in Manufacturing"] },
+      realWorldReadiness: { level: "High", explanation: "Ready for institutional capital." },
+      pitchSimulation: { outcome: "Term Sheet", explanation: "The metrics are too good to ignore." },
+      timeToFunding: { timeline: "3-4 Months", basis: "Based on current traction and market heat." },
+      founderActionRoadmap: [ { action: "Finalize Series A Deck", priority: "High" }, { action: "Secure 2 more OEM pilots", priority: "High" }, { action: "Hire Head of Engineering", priority: "Med" } ],
+      investorPsychology: { excitement: ["Tech moat", "Growth rate"], doubt: ["Sales complexity"], rejectionReasons: ["Too early for some growth funds"] },
+      investmentStory: { oneLineSummary: "The future of industrial efficiency powered by proprietary AI.", biggestStrength: "Proprietary Tech", biggestWeakness: "Sales Cycle", verdict: "Strong Buy" }
+    } : {
+      scores: { problemClarity: 40, marketOpportunity: 30, tractionStrength: 10, businessModel: 20, differentiation: 15, founderCredibility: 45 },
+      decision: "Reject",
+      confidence: "85%",
+      reason: "The problem being solved is not a 'must-have' for customers, and the market is already highly saturated with free alternatives. There is no clear path to monetization or defensibility. The lack of any traction after several months of development is a major red flag.",
+      strengths: ["Passionate founders", "Clean UI design"],
+      weaknesses: ["No clear problem-solution fit", "Highly saturated market", "No monetization strategy", "Zero user growth"],
+      missing: ["Any form of user validation", "Competitive analysis"],
+      improvements: ["Pivot to a B2B pet health niche", "Talk to 100 potential users"],
+      redFlags: ["No traction", "Saturated market"], objections: ["Why would people switch from Instagram?"], mistakes: ["Building before validating"], stageInsights: "You are in the 'Idea' stage but have spent too much time on code and not enough on customers.", followups: [], dealBreakers: ["Lack of differentiation"],
+      marketPositioning: { saturation: "High", strength: "Weak", explanation: "Social media for pets is a graveyard of failed startups. Instagram and TikTok already dominate this behavior." },
+      bestFitInvestors: [ { type: "Friends & Family", reason: "Institutional investors will require more validation." } ],
+      insightSummary: { impressed: ["UI"], concerns: ["Market", "Traction"], fixNow: ["User interviews"] },
+      multiVCSimulation: [ { type: "Early-stage VC", decision: "Reject", concern: "Is this a business or a hobby?", liked: "The founders seem nice." } ],
+      signalAnalysis: { positive: [], weak: [ { signal: "Social app fatigue", explanation: "Users are not looking for new niche social networks." } ] },
+      benchmarking: [ { area: "Traction", level: "Below" }, { area: "Model", level: "Below" } ],
+      actionPlan: { nextSteps: ["Stop coding", "Interview 50 pet owners"], recommendations: "Find a specific pain point in pet health or insurance instead of a general social network." },
+      perspectiveGap: { problem: { founder: "Huge", investor: "Minor", gap: "High" }, market: { founder: "Global", investor: "Niche", gap: "High" }, traction: { founder: "Coming", investor: "Stagnant", gap: "High" }, differentiation: { founder: "Pet-focused", investor: "None", gap: "High" } },
+      signalInterpretation: [ { signal: "Zero Growth", interpretation: "The market is not responding to the current value prop.", type: "warning" } ],
+      decisionAccountability: { why: "Lack of market need and defensibility.", assumptions: ["People want a separate app for pets"], risks: ["Running out of cash"], changeTriggers: ["10k organic users in 1 month", "Pivot to B2B"] },
+      founderReadiness: { clarity: 30, thinking: 40, execution: 20, feedback: "Need to focus on customer discovery." },
+      externalSignals: { momentum: "Declining", interest: "Low", trends: ["Social Media Saturation", "Niche App Fatigue"] },
+      realWorldReadiness: { level: "Low", explanation: "Needs a significant pivot." },
+      pitchSimulation: { outcome: "Hard Pass", explanation: "The opportunity size doesn't justify the risk." },
+      timeToFunding: { timeline: "Indefinite", basis: "Requires a complete pivot and validation." },
+      founderActionRoadmap: [ { action: "Interview 50 pet owners", priority: "High" }, { action: "Define a specific pain point", priority: "High" }, { action: "Stop all development", priority: "Med" } ],
+      investorPsychology: { excitement: [], doubt: ["Market size", "Defensibility"], rejectionReasons: ["Not a venture-scale business"] },
+      investmentStory: { oneLineSummary: "A social network for pets in a world that already has Instagram.", biggestStrength: "Founder Passion", biggestWeakness: "Market Need", verdict: "Do Not Invest" }
+    };
+
     if (type === 'weak') {
       setStartupData({
         pitch: "We are building a social network for pets. It's like Facebook but for dogs and cats. We don't have any users yet but we think it will be huge because people love their pets.",
@@ -1552,9 +1830,19 @@ export default function App() {
       });
     }
     
+    setReport(mockReport);
     setScreen('app');
     setActiveTab('insights');
-    generateReport();
+    
+    // Add to history
+    const avgScore = Math.round(Object.values(mockReport.scores).reduce((a: any, b: any) => a + b, 0) as number / 6);
+    const newHistoryItem: HistoryItem = {
+      date: new Date().toISOString(),
+      startupName: type === 'strong' ? "IndustriAI (Demo)" : "PetSocial (Demo)",
+      avgScore,
+      report: mockReport
+    };
+    setHistory(prev => [newHistoryItem, ...prev]);
   };
 
   // --- Main Render ---
